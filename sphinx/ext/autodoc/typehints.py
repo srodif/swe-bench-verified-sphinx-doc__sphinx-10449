@@ -28,7 +28,7 @@ def record_typehints(app: Sphinx, objtype: str, name: str, obj: Any,
             for param in sig.parameters.values():
                 if param.annotation is not param.empty:
                     annotation[param.name] = typing.stringify(param.annotation, mode)
-            if sig.return_annotation is not sig.empty:
+            if sig.return_annotation is not sig.empty and objtype != 'class':
                 annotation['return'] = typing.stringify(sig.return_annotation, mode)
     except (TypeError, ValueError):
         pass

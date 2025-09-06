@@ -1041,9 +1041,6 @@ def test_autodoc_typehints_description_with_documented_init(app):
             '   Parameters:\n'
             '      **x** (*int*) --\n'
             '\n'
-            '   Return type:\n'
-            '      None\n'
-            '\n'
             '   __init__(x)\n'
             '\n'
             '      Init docstring.\n'
@@ -1646,3 +1643,41 @@ def test_autodoc_default_options_with_values(app):
         assert '      list of weak references to the object (if defined)' not in actual
     assert '   .. py:method:: CustomIter.snafucate()' not in actual
     assert '      Makes this snafucated.' not in actual
+
+
+@pytest.mark.sphinx('text', testroot='ext-autodoc',
+                    confoverrides={'autodoc_typehints': "description"})
+def test_autoclass_no_return_type_with_description_mode(app):
+    """Test that classes don't show return types when autodoc_typehints="description".
+    
+    This is a regression test for issue #10449.
+    """
+    # This tests the exact scenario from issue #10449
+    (app.srcdir / 'index.rst').write_text(
+        '.. autoclass:: target.typehints.Math\n',
+        encoding='utf8'
+    )
+    app.build()
+    context = (app.outdir / 'index.txt').read_text(encoding='utf8')
+    
+    # The class documentation should NOT contain "Return type: None"
+    # even though the __init__ method has "-> None" annotation
+    lines = context.split('\n')
+    class_section = []
+    in_class = False
+    for line in lines:
+        if line.startswith('class target.typehints.Math'):
+            in_class = True
+        elif line.startswith('   ') and in_class:
+            class_section.append(line)
+        elif not line.startswith('   ') and line.strip() and in_class:
+            break
+    
+    class_content = '\n'.join(class_section)
+    
+    # Should have parameter types
+    assert 'Parameters:' in class_content
+    assert '**s** (*str*)' in class_content
+    
+    # Should NOT have return type
+    assert 'Return type:' not in class_content
